@@ -5,7 +5,7 @@ const AuthContext = createContext();
 
 // Configure axios with base URL
 axios.defaults.baseURL = process.env.NODE_ENV === 'production' 
-  ? '/api' 
+  ? 'https://unitechbackend.vercel.app/api' // Replace with your actual Vercel backend URL
   : 'http://localhost:5001/api';
 
 const validateUserData = (userData) => {

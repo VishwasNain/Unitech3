@@ -33,7 +33,7 @@ import {
   Error as ErrorIcon
 } from '@mui/icons-material';
 import { useAuth } from '../context/UserContext';
-import { api } from '../context/UserContext';
+import axios from 'axios';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -75,10 +75,10 @@ const Dashboard = () => {
     try {
       console.log('Fetching dashboard data with token:', token);
       
-      // Use the same API instance from the context
+      // Use axios directly
       const [profileRes, ordersRes] = await Promise.all([
-        api.get('/users/profile'),
-        api.get('/orders/myorders')
+        axios.get('/users/profile'),
+        axios.get('/orders/myorders')
       ]);
 
       // Process profile data

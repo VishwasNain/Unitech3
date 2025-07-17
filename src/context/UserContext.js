@@ -1,14 +1,17 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import axios from 'axios';
 
-// Use the same axios instance as in AuthContext
+// Configure axios with base URL - matches AuthContext.js
+const BASE_URL = process.env.NODE_ENV === 'production' 
+  ? 'https://unitechbackend.vercel.app/api' // Your Vercel backend URL
+  : 'http://localhost:5001/api';
+
+// Create an axios instance with default config
 const api = axios.create({
-  baseURL: process.env.NODE_ENV === 'production' 
-    ? '/api' 
-    : 'http://localhost:5001/api',
+  baseURL: BASE_URL,
   headers: {
-    'Content-Type': 'application/json'
-  }
+    'Content-Type': 'application/json',
+  },
 });
 
 const UserContext = createContext(null);
@@ -302,7 +305,7 @@ const useAuth = () => {
   return context;
 };
 
-// Export the hook, API instance, and UserProvider
-export { useAuth, api, UserProvider };
+// Export the hook and UserProvider
+export { useAuth, UserProvider };
 
 export default UserContext;

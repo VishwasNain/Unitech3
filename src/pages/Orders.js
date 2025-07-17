@@ -32,7 +32,7 @@ import { useNavigate } from 'react-router-dom';
 import { formatPrice } from '../utils/currency';
 import { format } from 'date-fns';
 import { useAuth } from '../context/UserContext';
-import { api } from '../context/UserContext';
+import axios from 'axios';
 
 const orderStatus = {
   pending: { 
@@ -79,7 +79,7 @@ const Orders = () => {
           return;
         }
 
-        const response = await api.get('/orders/myorders');
+        const response = await axios.get('/orders/my-orders');
         setOrders(response.data || []);
       } catch (err) {
         console.error('Error fetching orders:', err);
