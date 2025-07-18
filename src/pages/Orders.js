@@ -32,7 +32,6 @@ import { useNavigate } from 'react-router-dom';
 import { formatPrice } from '../utils/currency';
 import { format } from 'date-fns';
 import { useAuth } from '../context/UserContext';
-import axios from 'axios';
 
 const orderStatus = {
   pending: { 
@@ -70,7 +69,7 @@ const Orders = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Fetch orders from API
+  // Mock orders data
   useEffect(() => {
     const fetchOrders = async () => {
       try {
@@ -79,11 +78,49 @@ const Orders = () => {
           return;
         }
 
-        const response = await axios.get('/orders/my-orders');
-        setOrders(response.data || []);
+        // Simulate API call delay
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Mock orders data
+        const mockOrders = [
+          {
+            _id: '1',
+            orderNumber: 'ORD-001',
+            status: 'pending',
+            totalAmount: 1299.99,
+            createdAt: new Date().toISOString(),
+            items: [
+              { name: 'Laptop', quantity: 1, price: 1299.99, image: '/images/products/laptop.jpg' }
+            ]
+          },
+          {
+            _id: '2',
+            orderNumber: 'ORD-002',
+            status: 'delivered',
+            totalAmount: 249.99,
+            createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+            items: [
+              { name: 'Wireless Mouse', quantity: 1, price: 49.99, image: '/images/products/mouse.jpg' },
+              { name: 'Keyboard', quantity: 1, price: 89.99, image: '/images/products/keyboard.jpg' },
+              { name: 'Mouse Pad', quantity: 1, price: 19.99, image: '/images/products/mousepad.jpg' }
+            ]
+          },
+          {
+            _id: '3',
+            orderNumber: 'ORD-003',
+            status: 'delivered',
+            totalAmount: 99.99,
+            createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
+            items: [
+              { name: 'Headphones', quantity: 1, price: 99.99, image: '/images/products/headphones.jpg' }
+            ]
+          }
+        ];
+        
+        setOrders(mockOrders);
       } catch (err) {
-        console.error('Error fetching orders:', err);
-        setError(err.response?.data?.message || err.message || 'Failed to load orders');
+        console.error('Error loading orders:', err);
+        setError('Failed to load orders. Please try again later.');
       } finally {
         setLoading(false);
       }

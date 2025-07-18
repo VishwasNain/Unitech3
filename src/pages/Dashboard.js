@@ -33,7 +33,6 @@ import {
   Error as ErrorIcon
 } from '@mui/icons-material';
 import { useAuth } from '../context/UserContext';
-import axios from 'axios';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -64,8 +63,8 @@ const Dashboard = () => {
   });
 
   const fetchDashboardData = useCallback(async () => {
-    if (!token) {
-      console.error('No authentication token found');
+    if (!authUser) {
+      console.error('No authenticated user found');
       setError('Authentication required');
       setLoading(false);
       return;
@@ -73,24 +72,55 @@ const Dashboard = () => {
 
     setLoading(true);
     try {
-      console.log('Fetching dashboard data with token:', token);
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Use axios directly
-      const [profileRes, ordersRes] = await Promise.all([
-        axios.get('/users/profile'),
-        axios.get('/orders/myorders')
-      ]);
+      // Mock orders data
+      const mockOrders = [
+        {
+          _id: '1',
+          orderNumber: 'ORD-001',
+          status: 'pending',
+          totalAmount: 1299.99,
+          createdAt: new Date().toISOString(),
+          items: [
+            { name: 'Laptop', quantity: 1, price: 1299.99 }
+          ]
+        },
+        {
+          _id: '2',
+          orderNumber: 'ORD-002',
+          status: 'delivered',
+          totalAmount: 249.99,
+          createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+          items: [
+            { name: 'Wireless Mouse', quantity: 1, price: 49.99 },
+            { name: 'Keyboard', quantity: 1, price: 89.99 },
+            { name: 'Mouse Pad', quantity: 1, price: 19.99 }
+          ]
+        },
+        {
+          _id: '3',
+          orderNumber: 'ORD-003',
+          status: 'delivered',
+          totalAmount: 99.99,
+          createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
+          items: [
+            { name: 'Headphones', quantity: 1, price: 99.99 }
+          ]
+        }
+      ];
 
-      // Process profile data
-      const userData = profileRes.data;
-      const ordersData = ordersRes.data || [];
+      // Process user data from auth context
+      const userData = authUser;
+      const ordersData = mockOrders;
       
       // Calculate order stats
       const pendingOrders = ordersData.filter(order => order.status === 'pending').length;
       const completedOrders = ordersData.filter(order => order.status === 'delivered').length;
       
-      // Calculate account age
-      const joinDate = userData.createdAt ? new Date(userData.createdAt) : new Date();
+      // Calculate account age (using a fixed join date for demo)
+      const joinDate = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000); // 60 days ago
       const now = new Date();
       const diffTime = Math.abs(now - joinDate);
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -102,11 +132,9 @@ const Dashboard = () => {
       setUser({
         name: userData.name || 'User',
         email: userData.email || '',
-        phone: userData.phone || 'Not provided',
+        phone: userData.mobile || 'Not provided',
         joinDate: joinDate.toLocaleDateString(),
-        lastLogin: userData.lastLogin 
-          ? new Date(userData.lastLogin).toLocaleString() 
-          : 'First login',
+        lastLogin: 'Just now',
         address: userData.address || 'Not provided'
       });
 
@@ -133,48 +161,31 @@ const Dashboard = () => {
       );
 
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-      let errorMessage = 'Failed to load dashboard data';
-      
-      if (error.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
-        console.error('Error response data:', error.response.data);
-        console.error('Error status:', error.response.status);
-        
-        if (error.response.status === 401) {
-          // Token is invalid or expired
-          errorMessage = 'Your session has expired. Please log in again.';
-          // Clear any invalid tokens
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          // Redirect to login
-          navigate('/login', { 
-            state: { 
-              from: window.location.pathname,
-              message: 'Your session has expired. Please log in again.'
-            },
-            replace: true 
-          });
-        } else if (error.response.data && error.response.data.message) {
-          errorMessage = error.response.data.message;
-        }
-      } else if (error.request) {
-        // The request was made but no response was received
-        console.error('No response received:', error.request);
-        errorMessage = 'Unable to connect to the server. Please check your internet connection.';
-      }
-      
+      console.error('Error loading dashboard data:', error);
+      const errorMessage = 'Failed to load dashboard data';
       setError(errorMessage);
+      
+      // Show error message to user
       setSnackbar({
         open: true,
         message: errorMessage,
         severity: 'error'
       });
+      
+      // If user is not authenticated, redirect to login
+      if (!authUser) {
+        navigate('/login', { 
+          state: { 
+            from: window.location.pathname,
+            message: 'Please log in to view the dashboard.'
+          },
+          replace: true 
+        });
+      }
     } finally {
       setLoading(false);
     }
-  }, [token, navigate]);
+  }, [authUser, navigate]);
 
   useEffect(() => {
     if (authUser && token) {

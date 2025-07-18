@@ -5,6 +5,7 @@ const CartContext = createContext();
 export const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState([]);
   const [totalPrice, setTotalPrice] = useState(0);
+  const [orderHistory, setOrderHistory] = useState([]);
 
   const addToCart = (product, quantity = 1) => {
     const existingItem = cartItems.find(item => item.id === product.id);
@@ -67,12 +68,12 @@ export const CartProvider = ({ children }) => {
     }
 
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('Please log in to complete your order');
-      }
-
-      const orderData = {
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Create a mock order
+      const order = {
+        id: `order_${Date.now()}`,
         orderItems: cartItems.map(item => ({
           id: item.id,
           name: item.name,
@@ -90,33 +91,25 @@ export const CartProvider = ({ children }) => {
         },
         paymentMethod: paymentMethod,
         itemsPrice: totalPrice,
-        taxPrice: 0, // You can calculate tax based on your requirements
-        shippingPrice: 0, // You can calculate shipping based on your requirements
+        taxPrice: 0,
+        shippingPrice: 0,
         totalPrice: totalPrice,
+        isPaid: true,
+        paidAt: new Date().toISOString(),
+        isDelivered: false,
+        createdAt: new Date().toISOString()
       };
 
-      const response = await fetch('http://localhost:5001/api/orders', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(orderData)
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to place order');
-      }
-
+      // Add to order history
+      setOrderHistory(prev => [order, ...prev]);
+      
       // Clear cart after successful order
       clearCart();
       
       return { 
         success: true, 
         message: 'Order placed successfully!',
-        order: data
+        order: order
       };
     } catch (error) {
       console.error('Checkout error:', error);
@@ -149,6 +142,7 @@ export const CartProvider = ({ children }) => {
       value={{ 
         cartItems, 
         totalPrice, 
+        orderHistory,
         addToCart, 
         removeFromCart, 
         updateQuantity,

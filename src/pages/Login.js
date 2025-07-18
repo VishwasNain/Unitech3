@@ -14,7 +14,6 @@ import {
 } from '@mui/material';
 import { useUser } from '../context/UserContext';
 import { useAuth } from '../context/AuthContext';
-import axios from 'axios';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 
@@ -72,27 +71,36 @@ const Login = () => {
     }
 
     try {
-      const response = await axios.post('/users/login', {
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      // Mock user data - in a real app, this would come from your backend
+      const mockUser = {
+        _id: '1',
+        name: 'Demo User',
         email: formData.email,
-        password: formData.password
-      });
-
-      if (response.data && response.data.token) {
-        // Save token and user data
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
-        localStorage.setItem('hasVisitedBefore', 'true');
-        
-        // Update auth context
-        setUser(response.data.user);
-        setIsLoggedIn(true);
-        
-        // Navigate to home
-        navigate('/');
-      }
+        mobile: '1234567890',
+        createdAt: new Date().toISOString()
+      };
+      
+      // In a real app, the token would come from your backend
+      const mockToken = 'mock-jwt-token';
+      
+      // Save token and user data
+      localStorage.setItem('token', mockToken);
+      localStorage.setItem('user', JSON.stringify(mockUser));
+      localStorage.setItem('hasVisitedBefore', 'true');
+      
+      // Update auth context
+      setUser(mockUser);
+      setIsLoggedIn(true);
+      
+      // Navigate to home
+      navigate('/');
+      
     } catch (err) {
       console.error('Login error:', err);
-      setError(err.response?.data?.message || err.message || 'Login failed. Please try again.');
+      setError('Login failed. Please check your credentials and try again.');
     } finally {
       setLoading(false);
       setIsSubmitting(false);

@@ -1,12 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
 
 const AuthContext = createContext();
-
-// Configure axios with base URL
-axios.defaults.baseURL = process.env.NODE_ENV === 'production' 
-  ? 'https://unitechbackend.vercel.app/api' // Replace with your actual Vercel backend URL
-  : 'http://localhost:5001/api';
 
 const validateUserData = (userData) => {
   const errors = [];
@@ -25,33 +19,24 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Load user from localStorage on mount
+  // Mock user data for demo purposes
+  const MOCK_USER = {
+    _id: '1',
+    name: 'Demo User',
+    email: 'demo@example.com',
+    isAdmin: false
+  };
+
+  // Check if user is logged in on mount
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      fetchUser();
-    } else {
-      setLoading(false);
-    }
-  }, []);
-
-  const fetchUser = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await axios.get('/users/profile');
-      setUser(response.data.user);
+      // In a real app, you would validate the token
+      setUser(MOCK_USER);
       setIsLoggedIn(true);
-    } catch (error) {
-      console.error('Fetch user error:', error);
-      setError(error.response?.data?.msg || 'Failed to fetch user data');
-      localStorage.removeItem('token');
-      delete axios.defaults.headers.common['Authorization'];
-    } finally {
-      setLoading(false);
     }
-  };
+    setLoading(false);
+  }, []);
 
   const login = async (email, password) => {
     try {
@@ -64,18 +49,17 @@ export function AuthProvider({ children }) {
         throw new Error(errors.join(', '));
       }
 
-      const response = await axios.post('/users/login', { email, password });
-      const { token, user } = response.data;
+      // Mock login - in a real app, this would be an API call
+      await new Promise(resolve => setTimeout(resolve, 500));
       
-      localStorage.setItem('token', token);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      setUser(user);
+      localStorage.setItem('token', 'mock-jwt-token');
+      setUser(MOCK_USER);
       setIsLoggedIn(true);
       
       return true;
     } catch (error) {
       console.error('Login error:', error);
-      setError(error.response?.data?.msg || 'Login failed');
+      setError(error.message || 'Login failed');
       throw error;
     } finally {
       setLoading(false);
@@ -93,18 +77,21 @@ export function AuthProvider({ children }) {
         throw new Error(errors.join(', '));
       }
 
-      const response = await axios.post('/users', userData);
-      const { token, user } = response.data;
+      // Mock registration - in a real app, this would be an API call
+      await new Promise(resolve => setTimeout(resolve, 500));
       
-      localStorage.setItem('token', token);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      setUser(user);
+      localStorage.setItem('token', 'mock-jwt-token');
+      setUser({
+        ...MOCK_USER,
+        name: userData.name,
+        email: userData.email
+      });
       setIsLoggedIn(true);
       
       return true;
     } catch (error) {
       console.error('Registration error:', error);
-      setError(error.response?.data?.msg || 'Registration failed');
+      setError(error.message || 'Registration failed');
       throw error;
     } finally {
       setLoading(false);
@@ -113,31 +100,55 @@ export function AuthProvider({ children }) {
 
   const logout = () => {
     localStorage.removeItem('token');
-    delete axios.defaults.headers.common['Authorization'];
     setUser(null);
     setIsLoggedIn(false);
-    setError(null);
+  };
+
+  const updateProfile = async (userData) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Mock update - in a real app, this would be an API call
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      setUser(prev => ({
+        ...prev,
+        ...userData
+      }));
+      
+      return true;
+    } catch (error) {
+      console.error('Update profile error:', error);
+      setError('Failed to update profile');
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const value = {
+    user,
+    isLoggedIn,
+    loading,
+    error,
+    login,
+    register,
+    logout,
+    updateProfile
   };
 
   return (
-    <AuthContext.Provider value={{
-      user,
-      isLoggedIn,
-      loading,
-      error,
-      login,
-      register,
-      logout
-    }}>
-      {children}
+    <AuthContext.Provider value={value}>
+      {!loading && children}
     </AuthContext.Provider>
   );
 }
 
-export const useAuth = () => {
+export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-};
+}

@@ -15,7 +15,6 @@ import {
   Snackbar
 } from '@mui/material';
 import { useAuth } from '../context/UserContext';
-import axios from 'axios';
 
 const Profile = () => {
   const { user: authUser, token, updateUser } = useAuth();
@@ -33,28 +32,38 @@ const Profile = () => {
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/users/profile', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setUser({
-          name: response.data.name,
-          email: response.data.email,
-          phone: response.data.phone || '',
-        });
+        // Simulate API call delay
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        // Use authUser from context directly
+        if (authUser) {
+          setUser({
+            name: authUser.name || '',
+            email: authUser.email || '',
+            phone: authUser.mobile || '',
+          });
+        }
       } catch (err) {
         setError('Failed to load profile');
-        console.error('Error fetching profile:', err);
+        console.error('Error loading profile:', err);
       } finally {
         setLoading(false);
       }
     };
 
-    if (authUser && token) {
+    if (token && authUser) {
       fetchUserProfile();
     } else {
-      navigate('/login', { state: { from: '/profile' } });
+      setLoading(false);
+      
+      // If not authenticated, redirect to login
+      if (!token) {
+        navigate('/login', { 
+          state: { message: 'Please log in to view your profile' } 
+        });
+      }
     }
-  }, [authUser, token, navigate]);
+  }, [token, authUser, navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -69,18 +78,22 @@ const Profile = () => {
     setSaving(true);
     setError('');
     setSuccess('');
-    
+
     try {
-      const response = await axios.put(
-        'http://localhost:5000/api/users/profile',
-        user,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      updateUser(response.data);
+      // Update user in context (which will also update localStorage)
+      const updatedUser = {
+        ...authUser,
+        name: user.name,
+        mobile: user.phone
+      };
+      
+      updateUser(updatedUser);
       setSuccess('Profile updated successfully!');
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to update profile');
+      setError('Failed to update profile. Please try again.');
       console.error('Error updating profile:', err);
     } finally {
       setSaving(false);
