@@ -1,6 +1,9 @@
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001';
 
 export const api = {
+  // Base URL
+  baseUrl: API_BASE_URL,
+
   // Auth endpoints
   login: `${API_BASE_URL}/api/auth/login`,
   register: `${API_BASE_URL}/api/auth/register`,
@@ -8,10 +11,18 @@ export const api = {
   verifyOTP: `${API_BASE_URL}/api/auth/verify-otp`,
   resetPassword: `${API_BASE_URL}/api/auth/reset-password-with-otp`,
   
+  // User endpoints
+  getUserProfile: `${API_BASE_URL}/api/users/me`,
+  updateUserProfile: `${API_BASE_URL}/api/users/update-profile`,
+  
   // Order endpoints
   getOrder: (orderId) => `${API_BASE_URL}/api/orders/${orderId}`,
+  getMyOrders: `${API_BASE_URL}/api/orders/me`,
+  createOrder: `${API_BASE_URL}/api/orders`,
   
-  // Add other API endpoints here as needed
+  // Product endpoints
+  getProducts: `${API_BASE_URL}/api/products`,
+  getProduct: (productId) => `${API_BASE_URL}/api/products/${productId}`,
 };
 
 export const fetchWithAuth = async (url, options = {}) => {

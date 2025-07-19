@@ -5,10 +5,12 @@ const AuthContext = createContext();
 const validateUserData = (userData) => {
   const errors = [];
   
+  if (!userData.name) errors.push('Name is required');
   if (!userData.email) errors.push('Email is required');
   if (!userData.password) errors.push('Password is required');
   if (userData.password && userData.password.length < 6) 
     errors.push('Password must be at least 6 characters');
+  if (!userData.mobile) errors.push('Mobile number is required');
   
   return errors;
 };
@@ -77,21 +79,32 @@ export function AuthProvider({ children }) {
         throw new Error(errors.join(', '));
       }
 
-      // Mock registration - in a real app, this would be an API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      localStorage.setItem('token', 'mock-jwt-token');
-      setUser({
-        ...MOCK_USER,
-        name: userData.name,
-        email: userData.email
+      // Make API call to register
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
       });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Registration failed');
+      }
+
+      // Save token and user data
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      
+      setUser(data.user);
       setIsLoggedIn(true);
       
       return true;
     } catch (error) {
       console.error('Registration error:', error);
-      setError(error.message || 'Registration failed');
+      setError(error.message || 'Registration failed. Please try again.');
       throw error;
     } finally {
       setLoading(false);

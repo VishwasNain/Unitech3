@@ -72,55 +72,21 @@ const Dashboard = () => {
 
     setLoading(true);
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Mock orders data
-      const mockOrders = [
-        {
-          _id: '1',
-          orderNumber: 'ORD-001',
-          status: 'pending',
-          totalAmount: 1299.99,
-          createdAt: new Date().toISOString(),
-          items: [
-            { name: 'Laptop', quantity: 1, price: 1299.99 }
-          ]
-        },
-        {
-          _id: '2',
-          orderNumber: 'ORD-002',
-          status: 'delivered',
-          totalAmount: 249.99,
-          createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-          items: [
-            { name: 'Wireless Mouse', quantity: 1, price: 49.99 },
-            { name: 'Keyboard', quantity: 1, price: 89.99 },
-            { name: 'Mouse Pad', quantity: 1, price: 19.99 }
-          ]
-        },
-        {
-          _id: '3',
-          orderNumber: 'ORD-003',
-          status: 'delivered',
-          totalAmount: 99.99,
-          createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
-          items: [
-            { name: 'Headphones', quantity: 1, price: 99.99 }
-          ]
-        }
-      ];
+      // Fetch user profile and orders in parallel
+      const [userResponse, ordersResponse] = await Promise.all([
+        fetchWithAuth(api.getUserProfile),
+        fetchWithAuth(api.getMyOrders)
+      ]);
 
-      // Process user data from auth context
-      const userData = authUser;
-      const ordersData = mockOrders;
+      const userData = userResponse;
+      const ordersData = ordersResponse.data || [];
       
       // Calculate order stats
-      const pendingOrders = ordersData.filter(order => order.status === 'pending').length;
-      const completedOrders = ordersData.filter(order => order.status === 'delivered').length;
+      const pendingOrders = ordersData.filter(order => order.orderStatus === 'Processing').length;
+      const completedOrders = ordersData.filter(order => order.orderStatus === 'Delivered').length;
       
-      // Calculate account age (using a fixed join date for demo)
-      const joinDate = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000); // 60 days ago
+      // Calculate account age
+      const joinDate = new Date(userData.createdAt || Date.now());
       const now = new Date();
       const diffTime = Math.abs(now - joinDate);
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -149,39 +115,24 @@ const Dashboard = () => {
       // Set recent orders (last 3)
       setRecentOrders(
         ordersData
-          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
           .slice(0, 3)
           .map(order => ({
             id: order._id,
             date: new Date(order.createdAt).toLocaleDateString(),
-            total: order.totalAmount,
-            status: order.status,
-            orderNumber: order.orderNumber
+            total: order.totalPrice,
+            status: order.orderStatus,
+            orderNumber: order._id.substring(0, 8).toUpperCase()
           }))
       );
 
-    } catch (error) {
-      console.error('Error loading dashboard data:', error);
-      const errorMessage = 'Failed to load dashboard data';
-      setError(errorMessage);
-      
-      // Show error message to user
+    } catch (err) {
+      console.error('Error loading dashboard data:', err);
+      setError('Failed to load dashboard data');
       setSnackbar({
         open: true,
-        message: errorMessage,
+        message: 'Failed to load dashboard data',
         severity: 'error'
       });
-      
-      // If user is not authenticated, redirect to login
-      if (!authUser) {
-        navigate('/login', { 
-          state: { 
-            from: window.location.pathname,
-            message: 'Please log in to view the dashboard.'
-          },
-          replace: true 
-        });
-      }
     } finally {
       setLoading(false);
     }
