@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   Container,
   Paper,
@@ -18,6 +18,7 @@ import {
 import { CheckCircle as CheckCircleIcon, ShoppingCart as ShoppingCartIcon } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { formatPrice } from '../utils/currency';
+import { api, fetchWithAuth } from '../api';
 
 const OrderSuccess = () => {
   const { orderId } = useParams();
@@ -31,27 +32,14 @@ const OrderSuccess = () => {
     const fetchOrder = async () => {
       if (!order) {
         try {
-          const token = localStorage.getItem('token');
-          if (!token) {
-            navigate('/login', { state: { from: `/order/${orderId}` } });
-            return;
-          }
-
-          const response = await fetch(`http://localhost:5001/api/orders/${orderId}`, {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          });
-
-          if (!response.ok) {
-            throw new Error('Failed to fetch order details');
-          }
-
-          const data = await response.json();
+          const data = await fetchWithAuth(api.getOrder(orderId));
           setOrder(data);
         } catch (err) {
           console.error('Error fetching order:', err);
           setError('Failed to load order details. Please try again later.');
+          if (err.message === 'Unauthorized') {
+            navigate('/login', { state: { from: `/order/${orderId}` } });
+          }
         } finally {
           setLoading(false);
         }

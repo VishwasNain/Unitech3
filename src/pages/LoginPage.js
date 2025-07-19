@@ -13,20 +13,20 @@ import {
   CircularProgress,
 } from '@mui/material';
 import { useNavigate, useLocation, Link as RouterLink } from 'react-router-dom';
-import { useAuth } from '../context/UserContext';
+import { api, fetchWithAuth } from '../api';
 
 const LoginPage = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, user, loading } = useAuth();
   
   // Login form state
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   // Forgot password state
@@ -42,43 +42,48 @@ const LoginPage = () => {
   const [forgotSuccess, setForgotSuccess] = useState('');
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    setFormData(prev => ({
+      ...prev,
+      [e.target.name]: e.target.value
+    }));
   };
 
   const handleForgotChange = (e) => {
-    setForgotData({
-      ...forgotData,
-      [e.target.name]: e.target.value,
-    });
+    setForgotData(prev => ({
+      ...prev,
+      [e.target.name]: e.target.value
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
     setError('');
     
     // Basic validation
     if (!formData.email || !formData.password) {
       setError('Please enter both email and password');
+      setLoading(false);
       return;
     }
 
     try {
-      const result = await login(formData.email, formData.password);
+      const data = await fetchWithAuth(api.login, {
+        method: 'POST',
+        body: JSON.stringify(formData)
+      });
+
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
       
-      if (result?.success) {
-        // Check if there's a redirect path in the location state
-        const from = location.state?.from || '/';
-        console.log('Login successful, redirecting to:', from);
-        navigate(from, { replace: true });
-      } else {
-        setError(result?.message || 'Login failed. Please check your credentials.');
-      }
-    } catch (error) {
-      console.error('Login error:', error);
-      setError(error.message || 'An error occurred during login. Please try again.');
+      // Check if there's a redirect path in the location state
+      const from = location.state?.from || '/';
+      console.log('Login successful, redirecting to:', from);
+      navigate(from, { replace: true });
+    } catch (err) {
+      setError(err.message || 'Login failed. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -92,11 +97,8 @@ const LoginPage = () => {
     setForgotError('');
     
     try {
-      const response = await fetch('/api/auth/forgot-password', {
+      const response = await fetchWithAuth(api.forgotPassword, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({ mobile: forgotData.mobile }),
       });
 
@@ -126,11 +128,8 @@ const LoginPage = () => {
     setForgotError('');
     
     try {
-      const response = await fetch('/api/auth/verify-otp', {
+      const response = await fetchWithAuth(api.verifyOTP, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({ 
           mobile: forgotData.mobile,
           otp: forgotData.otp 
@@ -168,11 +167,8 @@ const LoginPage = () => {
     setForgotError('');
     
     try {
-      const response = await fetch('/api/auth/reset-password-with-otp', {
+      const response = await fetchWithAuth(api.resetPasswordWithOTP, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({ 
           mobile: forgotData.mobile,
           otp: forgotData.otp,
