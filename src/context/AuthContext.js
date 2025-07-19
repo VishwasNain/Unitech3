@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { api, fetchWithAuth } from '../api';
 
 const AuthContext = createContext();
 
@@ -21,23 +22,30 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Mock user data for demo purposes
-  const MOCK_USER = {
-    _id: '1',
-    name: 'Demo User',
-    email: 'demo@example.com',
-    isAdmin: false
-  };
-
   // Check if user is logged in on mount
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      // In a real app, you would validate the token
-      setUser(MOCK_USER);
-      setIsLoggedIn(true);
-    }
-    setLoading(false);
+    const checkAuth = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const userData = localStorage.getItem('user');
+        
+        if (token && userData) {
+          // Validate token with backend
+          const data = await fetchWithAuth(api.getUserProfile);
+          setUser(data.user);
+          setIsLoggedIn(true);
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+        // Clear invalid auth data
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAuth();
   }, []);
 
   const login = async (email, password) => {
@@ -51,11 +59,22 @@ export function AuthProvider({ children }) {
         throw new Error(errors.join(', '));
       }
 
-      // Mock login - in a real app, this would be an API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      localStorage.setItem('token', 'mock-jwt-token');
-      setUser(MOCK_USER);
+      const response = await fetch(api.login, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+        credentials: 'include'
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Login failed');
+      }
+
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      setUser(data.user);
       setIsLoggedIn(true);
       
       return true;
@@ -79,13 +98,11 @@ export function AuthProvider({ children }) {
         throw new Error(errors.join(', '));
       }
 
-      // Make API call to register
-      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/auth/register`, {
+      const response = await fetch(api.register, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(userData),
+        credentials: 'include'
       });
 
       const data = await response.json();
@@ -94,10 +111,8 @@ export function AuthProvider({ children }) {
         throw new Error(data.message || 'Registration failed');
       }
 
-      // Save token and user data
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
-      
       setUser(data.user);
       setIsLoggedIn(true);
       
@@ -111,10 +126,21 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    setUser(null);
-    setIsLoggedIn(false);
+  const logout = async () => {
+    try {
+      // Call logout API if needed
+      await fetch(api.logout, {
+        method: 'POST',
+        credentials: 'include'
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setUser(null);
+      setIsLoggedIn(false);
+    }
   };
 
   const updateProfile = async (userData) => {
@@ -122,18 +148,26 @@ export function AuthProvider({ children }) {
       setLoading(true);
       setError(null);
       
-      // Mock update - in a real app, this would be an API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
+      const data = await fetchWithAuth(api.updateUserProfile, {
+        method: 'PUT',
+        body: JSON.stringify(userData)
+      });
+
       setUser(prev => ({
         ...prev,
-        ...userData
+        ...data.user
+      }));
+      
+      // Update stored user data
+      localStorage.setItem('user', JSON.stringify({
+        ...JSON.parse(localStorage.getItem('user') || '{}'),
+        ...data.user
       }));
       
       return true;
     } catch (error) {
       console.error('Update profile error:', error);
-      setError('Failed to update profile');
+      setError(error.message || 'Failed to update profile');
       throw error;
     } finally {
       setLoading(false);
@@ -153,7 +187,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 }

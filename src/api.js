@@ -40,29 +40,40 @@ export const fetchWithAuth = async (url, options = {}) => {
   }
 
   try {
+    console.log('Making request to:', url);
+    console.log('Request headers:', headers);
+    
     const response = await fetch(url, {
       ...options,
       headers,
-      credentials: 'include', // Important for cookies/sessions
+      credentials: 'include',
     });
 
-    // Handle non-JSON responses
-    const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-      const text = await response.text();
-      console.error('Non-JSON response:', { status: response.status, text });
-      throw new Error('Received non-JSON response from server');
+    console.log('Response status:', response.status);
+    console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
+    const responseText = await response.text();
+    console.log('Response text:', responseText);
+
+    // Try to parse as JSON
+    try {
+      const data = responseText ? JSON.parse(responseText) : {};
+      
+      if (!response.ok) {
+        throw new Error(data.message || `Request failed with status ${response.status}`);
+      }
+      
+      return data;
+    } catch (jsonError) {
+      console.error('Failed to parse JSON:', jsonError);
+      throw new Error(`Invalid JSON response from server. Status: ${response.status}. Response: ${responseText.substring(0, 200)}`);
     }
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || 'Something went wrong');
-    }
-
-    return data;
   } catch (error) {
-    console.error('API Error:', { url, error });
+    console.error('Request failed:', {
+      url,
+      error: error.message,
+      stack: error.stack
+    });
     throw error;
   }
 };
