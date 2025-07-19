@@ -33,6 +33,7 @@ import {
   Error as ErrorIcon
 } from '@mui/icons-material';
 import { useAuth } from '../context/UserContext';
+import { fetchWithAuth, api } from '../api';
 
 const Dashboard = () => {
   const navigate = useNavigate();
