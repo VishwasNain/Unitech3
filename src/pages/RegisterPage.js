@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 import {
   Container,
   Paper,
@@ -14,6 +15,21 @@ import {
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/UserContext';
+
+// API utility function for registration
+const handleRegister = async (formData) => {
+  try {
+    const res = await axios.post(
+      `${process.env.REACT_APP_API_BASE_URL}/api/register`,
+      formData
+    );
+    console.log(res.data);
+    return res.data;
+  } catch (error) {
+    console.error('Registration error:', error);
+    throw error;
+  }
+};
 
 const RegisterPage = () => {
   const theme = useTheme();
