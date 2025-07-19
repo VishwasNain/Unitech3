@@ -1,4 +1,7 @@
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001';
+const isProduction = process.env.NODE_ENV === 'production';
+const API_BASE_URL = isProduction 
+  ? 'https://unitech-backend.onrender.com'  // Your Render backend URL
+  : 'http://localhost:5001';
 
 export const api = {
   // Base URL
@@ -36,15 +39,30 @@ export const fetchWithAuth = async (url, options = {}) => {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(url, {
-    ...options,
-    headers,
-  });
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers,
+      credentials: 'include', // Important for cookies/sessions
+    });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Something went wrong');
+    // Handle non-JSON responses
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await response.text();
+      console.error('Non-JSON response:', { status: response.status, text });
+      throw new Error('Received non-JSON response from server');
+    }
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Something went wrong');
+    }
+
+    return data;
+  } catch (error) {
+    console.error('API Error:', { url, error });
+    throw error;
   }
-
-  return response.json();
 };
